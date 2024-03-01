@@ -1,7 +1,6 @@
 const model = require("../database/models");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-// const { Model } = require("sequelize");
 require("dotenv").config();
 
 function login(req, res) {
