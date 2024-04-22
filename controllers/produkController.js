@@ -1,94 +1,101 @@
+const { response } = require("..");
 const db = require("../database/models");
-const produk = require("../database/models/produk");
-const Produk = db.Produk;
+const Produk = db.produk;
 
-// CREATE: Menambahkan data ke dalam tabel kategoris
-exports.create = (req, res) => {
-    // Validasi permintaan
-    if (!req.body.nama_produk) {
-        return res.status(400).send({
-            message: "Nama produk tidak boleh kosong",
+exports.get = async (req, res) => {
+    try {
+        const result = await Produk.findAndCountAll();
+        
+        res.json({
+            message: "Data Produk berhasil diambil.",
+            data: result,
+        });
+    } catch (err) {
+        console.error(err); // Tambahkan log error di sini
+        res.status(500).json({
+            message: err.message || "Terjadi kesalahan saat mengambil data Produk.",
+            data: null,
         });
     }
+};
 
-    // Data yang diperoleh dari inputan oleh pengguna
-    const produk = {
-        nama_produk: req.body.nama_produk,
-        description: req.body.description,
-        gambar: req.body.gambar,
-        harga: req.body.harga,
-        size_chart: req.body.size_chart,
-        stok: req.body.stok,
-    };
-
-    // Proses menyimpan ke dalam database
-    Produk.create(produk).then((result) => {
+// BONUS ===> Mengambil data sesuai id yang dikirimkan
+exports.findOne =  (req, res) => {
+    Produk.findByPk(req.params.id).then((result) => {
+        if (!result) {
+            return res.status(404).json({
+                message: `produk dengan id=${req.params.id} tidak ditemukan.`,
+                data: result,
+            });
+        }
         res.json({
-            message: "Kategori berhasil dibuat.",
+            message: "Produk berhasil ditemukan.",
             data: result,
         });
     }).catch((err) => {
         res.status(500).json({
-            message: err.message || "Terjadi kesalahan saat membuat kategori.",
+            message: err.message || "Terjadi kesalahan saat mengambil Pro.",
             data: null,
         });
     });
 };
 
-exports.findAll = (req, res) => {
-    Produk.findAll()
+// CREATE: Menambahkan data ke dalam tabel kategoris
+exports.create = (req, res) => {
+    // Data yang diperoleh dari inputan oleh pengguna
+    const produkData = {
+        nama_produk: req.body.nama_produk,
+        description: req.body.description,
+        harga: req.body.harga,
+        stok: req.body.stok,
+    };
+    // Proses menyimpan ke dalam database
+    Produk.create(produkData)
         .then((result) => {
             res.json({
-                message: "Data Produks berhasil diambil.",
-                data: result,
+                message: "Produk berhasil dibuat.",
+                data: result,   
             });
         })
         .catch((err) => {
-            console.error(err); // Tambahkan log error di sini
             res.status(500).json({
-                message: err.message || "Terjadi kesalahan saat mengambil data Produks.",
+                message: err.message || "Terjadi kesalahan saat membuat produk.",
                 data: null,
             });
         });
 };
 
+
 // UPDATE: Merubah data sesuai dengan id yang dikirimkan sebagai params
-exports.update = (req, res) => {
-    const id = req.params.id;
+exports.update = async (req, res) => {
+    try {
+        const id = req.params.id;
 
-    // Field untuk memperbarui data produk
-    const produkData = {
-        nama_produk: req.body.nama_produk,
-        description: req.body.description,
-        gambar: req.body.gambar,
-        harga: req.body.harga,
-        size_chart: req.body.size_chart,
-        stok: req.body.stok,
-        // Tambahkan bidang lain sesuai kebutuhan
-    };
+        // Field untuk memperbarui data produk
+        const produkData = {
+            nama_produk: req.body.nama_produk,
+            description: req.body.description,
+            harga: req.body.harga,
+            stok: req.body.stok,
+            // Tambahkan bidang lain sesuai kebutuhan
+        };
 
-    Produk.update(produkData, {
-        where: { id },
-    })
-        .then((num) => {
-            if (num == 1) {
-                res.json({
-                    message: "Produk berhasil diperbarui.",
-                    data: produkData,
-                });
-            } else {
-                res.json({
-                    message: `Tidak dapat memperbarui produk dengan id=${id}. Mungkin produk tidak ditemukan atau req.body kosong!`,
-                    data: produkData,
-                });
-            }
-        })
-        .catch((err) => {
-            res.status(500).json({
-                message: err.message || "Terjadi kesalahan saat memperbarui produk.",
-                data: null,
-            });
+        const data = await Produk.update(produkData, {
+            where: { id }, 
         });
+
+        const response = await Produk.findByPk(id)
+        const result = data ? data : `${id} not found in db`
+        res.json({
+    
+        response}).status(200)
+       
+    } catch (err) {
+        res.status(500).json({
+            message: err.message || "Terjadi kesalahan saat memperbarui produk.",
+            data: null,
+        });
+    }
 };
 
 // DELETE: Menghapus data sesuai id yang dikirimkan
@@ -99,39 +106,18 @@ exports.delete = (req, res) => {
     }).then((num) => {
         if (num == 1) {
             res.json({
-                message: "Kategori berhasil dihapus.",
+                message: "Produk berhasil dihapus.",
                 data: req.body,
             });
         } else {
             res.json({
-                message: `Tidak dapat menghapus kategori dengan id=${id}. Mungkin kategori tidak ditemukan!`,
+                message: `Tidak dapat menghapus Produk dengan id=${id}. Mungkin kategori tidak ditemukan!`,
                 data: req.body,
             });
         }
     }).catch((err) => {
         res.status(500).json({
-            message: err.message || "Terjadi kesalahan saat menghapus kategori.",
-            data: null,
-        });
-    });
-};
-
-// BONUS ===> Mengambil data sesuai id yang dikirimkan
-exports.findOne = (req, res) => {
-    Produk.findByPk(req.params.id).then((result) => {
-        if (!result) {
-            return res.status(404).json({
-                message: `Kategori dengan id=${req.params.id} tidak ditemukan.`,
-                data: result,
-            });
-        }
-        res.json({
-            message: "Kategori berhasil ditemukan.",
-            data: result,
-        });
-    }).catch((err) => {
-        res.status(500).json({
-            message: err.message || "Terjadi kesalahan saat mengambil kategori.",
+            message: err.message || "Terjadi kesalahan saat menghapus Produk.",
             data: null,
         });
     });
